@@ -5,10 +5,10 @@ Simple HTTP Request helper for the browser
 ## Get JSON
 
 ```TypeScript
-const url     = 'https://example.com/foo.json'
-const headers = {responseType: 'json'}
+const url      = 'https://example.com/foo.json'
+const oprtions = {responseType: 'json'}
 
-HttpRequest.get(url, headers, (res: HttpRequestResponse) => {
+HttpRequest.get(url, options, (res: HttpRequestResponse) => {
 	const foo = res.response
 })
 
