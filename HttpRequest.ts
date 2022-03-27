@@ -1,3 +1,14 @@
+/**
+ * HttpRequest
+ *
+ * A simple XMLHttpRequest helper
+ * https://github.com/PopovMP/http-request
+ * 
+ * Copyright @ 2022 Miroslav Popov
+ * 
+ * v1.0 2022.03.27
+ */
+
 type HttpRequestOptions = {
 	headers?      : object
 	responseType? : XMLHttpRequestResponseType
