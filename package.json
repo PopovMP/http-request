@@ -1,0 +1,17 @@
+{
+  "name": "http-request",
+  "version": "1.4.0",
+  "description": "Simple HTTP Request helper for the browser",
+  "main": "index.js",
+  "directories": {
+    "lib": "lib"
+  },
+  "dependencies": {
+    "typescript": "^5.4.5"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json"
+  },
+  "author": "Popov",
+  "license": "MIT"
+}

@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>HttpRequest Lib</title>
+</head>
+<body>
+
+<h1>HttpRequest Test Page</h1>
+
+<p>Test requests against <a href="https://httpbin.org/">https://httpbin.org/</a></p>
+
+<h2>GET Text</h2>
+<pre>
+const url:string = "https://httpbin.org/get";
+const options: HttpRequestOptions = {};
+HttpRequest.get(url, options, (res: HttpRequestResponse): void => {
+    resField.innerText = JSON.stringify(res, null, 2);
+});
+</pre>
+<button type="button" id="get-text-btn">GET JSON</button>
+<pre id="get-text-res"></pre>
+
+
+<h2>GET JSON</h2>
+<pre>
+const url:string = "https://httpbin.org/get";
+const options: HttpRequestOptions = {responseType: "json"};
+HttpRequest.get(url, options, (res: HttpRequestResponse): void => {
+    resField.innerText = JSON.stringify(res, null, 2);
+});
+</pre>
+<button type="button" id="get-json-btn">GET JSON</button>
+<pre id="get-json-res"></pre>
+
+
+<h2>POST JSON Text</h2>
+<h3>Post JSON object as a string</h3>
+<pre>
+const url: string = "https://httpbin.org/post";
+const options: HttpRequestOptions = {responseType: "json", headers: {"X-Custom": "custom"}};
+const body: any = {foo: "bar", baz: 42};
+const bodyTxt: string = JSON.stringify(body);
+HttpRequest.post(url, bodyTxt, options, (res: HttpRequestResponse): void => {
+    resField.innerText = JSON.stringify(res, null, 2);
+});
+</pre>
+<button type="button" id="post-json-text-btn">POST JSON</button>
+<pre id="post-json-text-res"></pre>
+
+
+<h2>POST JSON</h2>
+<h3>Post JSON</h3>
+<pre>
+const url: string = "https://httpbin.org/anything";
+const options: HttpRequestOptions = {responseType: "json", headers: {"Content-Type": "application/json"}};
+const body: any = {foo: "bar", baz: 42};
+HttpRequest.post(url, body, options, (res: HttpRequestResponse): void => {
+    resField.innerText = JSON.stringify(res, null, 2);
+});
+</pre>
+<button type="button" id="post-json-btn">POST JSON</button>
+<pre id="post-json-res"></pre>
+
+
+<h2>POST Form</h2>
+<h3>Post form</h3>
+<pre>
+const url: string = "https://httpbin.org/post";
+const options: HttpRequestOptions = {responseType: "json"};
+const form: {[param: string]: string|number} = {foo: "bar", baz: 42};
+HttpRequest.form(url, form, options, (res: HttpRequestResponse): void => {
+    resField.innerText = JSON.stringify(res, null, 2);
+});
+</pre>
+<button type="button" id="post-form-btn">POST Form</button>
+<pre id="post-form-res"></pre>
+
+
+<h2>Timeout</h2>
+<pre>
+const url: string = "https://httpbin.org/delay/10";
+const options: HttpRequestOptions = {timeout: 5 * 1000};
+HttpRequest.get(url, options, (res: HttpRequestResponse): void => {
+    resField.innerText = JSON.stringify(res, null, 2);
+});
+</pre>
+<button type="button" id="post-timeout-btn">POST Form</button>
+<pre id="post-timeout-res"></pre>
+
+
+<h2>Resources not found (404)</h2>
+<pre>
+const url: string = "https://httpbin.org/status/404";
+const options: HttpRequestOptions = {};
+HttpRequest.get(url, options, (res: HttpRequestResponse): void => {
+    resField.innerText = JSON.stringify(res, null, 2);
+});
+</pre>
+<button type="button" id="post-404-btn">POST Form</button>
+<pre id="post-404-res"></pre>
+
+
+<script src="index.js"></script>
+<script>
+    const app = new Application();
+    app.initialize();
+</script>
+</body>
+</html>
