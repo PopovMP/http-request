@@ -33,7 +33,6 @@ type HttpRequestCallback = (res: HttpRequestResponse) => void
  * @class HttpRequest
  */
 class HttpRequest {
-
     /**
      * Make a GET request
      */
@@ -44,24 +43,22 @@ class HttpRequest {
     /**
      * Make a POST request
      */
-    public static post(url: string, body: any, options: HttpRequestOptions,
-                       callback: HttpRequestCallback): void {
+    public static post(url: string, body: any, options: HttpRequestOptions, callback: HttpRequestCallback): void {
         HttpRequest.request("POST", url, body, options, callback);
     }
 
     /**
      * Make POST request encoded as "application/x-www-form-urlencoded"
      */
-    public static form(url: string, formData: Record<string, string|number>,
-                  options: HttpRequestOptions, callback: HttpRequestCallback): void {
+    public static form(url: string, formData: Record<string, string|number>, options: HttpRequestOptions,
+                       callback: HttpRequestCallback): void {
 
         const parameters: string[] = [];
         for (const param of Object.keys(formData))
             parameters.push(`${param}=${encodeURIComponent(formData[param])}`);
         const body: string = parameters.join("&");
 
-        if (!options.headers)
-            options.headers = {};
+        if (!options.headers) options.headers = {};
         options.headers["Content-Type"] = "application/x-www-form-urlencoded";
 
         HttpRequest.request("POST", url, body, options, callback);
@@ -129,6 +126,7 @@ class HttpRequest {
 
         function resError(message: string): void {
             if (isCompleted) return;
+
             isCompleted = true;
             callback({
                  response    : undefined,
@@ -138,7 +136,7 @@ class HttpRequest {
                  status      : req.status,
                  statusText  : message,
                  headers     : {},
-             });
+            });
         }
     }
 }
