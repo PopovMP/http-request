@@ -60,7 +60,7 @@ const url     = "https://exmaple.com/api/user";
 const body    = {username: "John", email: "john@example.com", pasword: "12343"};
 const options = {headers: {}, responseType: "json"};
 
-HttpRequest.post(url, body, options, (res: HttpRequestResponse) => {
+HttpRequest.json(url, body, options, (res: HttpRequestResponse) => {
     const user: User = res.response;
 });
 ```

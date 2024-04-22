@@ -5,8 +5,8 @@ class Application {
             .addEventListener("click", this.getTextTest.bind(this));
         document.getElementById("get-json-btn")
             .addEventListener("click", this.getJsonTest.bind(this));
-        document.getElementById("post-json-text-btn")
-            .addEventListener("click", this.postJsonTextTest.bind(this));
+        document.getElementById("post-text-btn")
+            .addEventListener("click", this.postTextTest.bind(this));
         document.getElementById("post-json-btn")
             .addEventListener("click", this.postJsonTest.bind(this));
         document.getElementById("post-form-btn")
@@ -20,7 +20,7 @@ class Application {
         event.preventDefault();
         const resField = document.getElementById("get-text-res");
         const url = "https://httpbin.org/get";
-        const options = {};
+        const options = { responseType: "text" };
         HttpRequest.get(url, options, (res) => {
             resField.innerText = JSON.stringify(res, null, 2);
         });
@@ -34,13 +34,12 @@ class Application {
             resField.innerText = JSON.stringify(res, null, 2);
         });
     }
-    postJsonTextTest(event) {
+    postTextTest(event) {
         event.preventDefault();
-        const resField = document.getElementById("post-json-text-res");
+        const resField = document.getElementById("post-text-res");
         const url = "https://httpbin.org/post";
-        const options = { responseType: "json", headers: { "X-Custom": "custom" } };
-        const body = { foo: "bar", baz: 42 };
-        const bodyTxt = JSON.stringify(body);
+        const options = { responseType: "json" };
+        const bodyTxt = "Hello, world!";
         HttpRequest.post(url, bodyTxt, options, (res) => {
             resField.innerText = JSON.stringify(res, null, 2);
         });
@@ -49,9 +48,9 @@ class Application {
         event.preventDefault();
         const resField = document.getElementById("post-json-res");
         const url = "https://httpbin.org/anything";
-        const options = { responseType: "json", headers: { "Content-Type": "application/json" } };
+        const options = { responseType: "json" };
         const body = { foo: "bar", baz: 42 };
-        HttpRequest.post(url, body, options, (res) => {
+        HttpRequest.json(url, body, options, (res) => {
             resField.innerText = JSON.stringify(res, null, 2);
         });
     }
@@ -69,7 +68,7 @@ class Application {
         event.preventDefault();
         const resField = document.getElementById("post-timeout-res");
         const url = "https://httpbin.org/delay/10";
-        const options = { timeout: 5 * 1000 };
+        const options = { timeout: 2 * 1000, responseType: "json" };
         HttpRequest.get(url, options, (res) => {
             resField.innerText = JSON.stringify(res, null, 2);
         });
@@ -78,7 +77,7 @@ class Application {
         event.preventDefault();
         const resField = document.getElementById("post-404-res");
         const url = "https://httpbin.org/status/404";
-        const options = {};
+        const options = { responseType: "json" };
         HttpRequest.get(url, options, (res) => {
             resField.innerText = JSON.stringify(res, null, 2);
         });
@@ -92,7 +91,7 @@ class Application {
  *
  * Copyright @ 2024 Miroslav Popov
  *
- * v1.4 2024.04.21
+ * v2.0 2024.04.22
  */
 /**
  * Provides `get` and `post` methods
@@ -100,16 +99,26 @@ class Application {
  */
 class HttpRequest {
     /**
-     * Make a GET request
+     * GET request
      */
     static get(url, options, callback) {
         HttpRequest.request("GET", url, null, options, callback);
     }
     /**
-     * Make a POST request
+     * POST ArrayBuffer, string or null
      */
     static post(url, body, options, callback) {
         HttpRequest.request("POST", url, body, options, callback);
+    }
+    /**
+     * POST JSON
+     */
+    static json(url, data, options, callback) {
+        const bodyText = JSON.stringify(data);
+        if (!options.headers)
+            options.headers = {};
+        options.headers["Content-Type"] = "application/json";
+        HttpRequest.request("POST", url, bodyText, options, callback);
     }
     /**
      * Make POST request encoded as "application/x-www-form-urlencoded"
@@ -118,43 +127,34 @@ class HttpRequest {
         const parameters = [];
         for (const param of Object.keys(formData))
             parameters.push(`${param}=${encodeURIComponent(formData[param])}`);
-        const body = parameters.join("&");
+        const bodyText = parameters.join("&");
         if (!options.headers)
             options.headers = {};
         options.headers["Content-Type"] = "application/x-www-form-urlencoded";
-        HttpRequest.request("POST", url, body, options, callback);
+        HttpRequest.request("POST", url, bodyText, options, callback);
     }
     /**
      * Make a request
      */
     static request(method, url, body, options, callback) {
-        let isCompleted = false;
+        let isCompleted = false; // Ensures that the callback is called only once.
         const req = new XMLHttpRequest();
-        req.open(method, url, true);
-        if (typeof options.headers === "object") {
-            for (const name of Object.keys(options.headers))
-                req.setRequestHeader(name, options.headers[name]);
-        }
+        req.open(method, url);
+        HttpRequest.setReqHeaders(req, options);
         req.timeout = typeof options.timeout === "number" ? options.timeout : 20 * 1000;
         req.responseType = options.responseType || "";
         req.onreadystatechange = req_readyStateChange;
-        req.onerror = req_error;
-        req.ontimeout = req_timeout;
-        req.onabort = req_abort;
+        req.onerror = () => { resError("Request error"); };
+        req.ontimeout = () => { resError("Request timeout"); };
+        req.onabort = () => { resError("Request aborted"); };
         req.send(body);
         function req_readyStateChange() {
             if (req.readyState !== XMLHttpRequest.DONE || req.status === 0)
                 return;
             if (isCompleted)
                 return;
-            const headers = {};
-            const resHeaders = req.getAllResponseHeaders().trim().split(/[\r\n]+/);
-            for (const header of resHeaders) {
-                const parts = header.split(": ");
-                headers[parts[0]] = parts[1];
-            }
-            const isResponseText = req.responseType === "text" || req.responseType === "";
             isCompleted = true;
+            const isResponseText = req.responseType === "text" || req.responseType === "";
             callback({
                 response: isResponseText ? undefined : req.response,
                 responseText: isResponseText ? req.responseText : undefined,
@@ -162,17 +162,8 @@ class HttpRequest {
                 responseURL: req.responseURL,
                 status: req.status,
                 statusText: req.statusText,
-                headers: headers,
+                headers: HttpRequest.getResHeaders(req),
             });
-        }
-        function req_abort() {
-            resError("Request aborted");
-        }
-        function req_timeout() {
-            resError("Request timeout");
-        }
-        function req_error() {
-            resError("An error occurred during the transaction");
         }
         function resError(message) {
             if (isCompleted)
@@ -188,6 +179,38 @@ class HttpRequest {
                 headers: {},
             });
         }
+    }
+    static setReqHeaders(req, options) {
+        if (typeof options.headers !== "object")
+            return;
+        if (Array.isArray(options.headers) || options.headers === null) {
+            console.error("Wrong headers type in HttpRequest. Got: " + JSON.stringify(options.headers));
+            return;
+        }
+        const names = Object.keys(options.headers);
+        for (let i = 0; i < names.length; i += 1) {
+            const value = options.headers[names[i]];
+            if (typeof value !== "string") {
+                console.error(`Wrong header: ${names[i]} ${value}`);
+                continue;
+            }
+            req.setRequestHeader(names[i], value);
+        }
+    }
+    static getResHeaders(req) {
+        const headers = {};
+        const resHeaders = req.getAllResponseHeaders().trim().split(/[\r\n]+/);
+        for (let i = 0; i < resHeaders.length; i += 1) {
+            const header = resHeaders[i];
+            const parts = header.split(": ");
+            if (parts.length !== 2)
+                continue;
+            const name = parts[0].trim();
+            const value = parts[1].trim();
+            if (name.length > 0 && value.length > 0)
+                headers[name] = value;
+        }
+        return headers;
     }
 }
 //# sourceMappingURL=index.js.map

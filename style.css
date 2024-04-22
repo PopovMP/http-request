@@ -1,0 +1,25 @@
+body {
+    background-color: #353535;
+    color: antiquewhite;
+}
+
+a {
+    color: aqua;
+}
+
+h2 {
+    margin-top: 40px;
+}
+
+.code {
+    padding: 10px;
+    border: solid 2px darkgrey;
+    color: white;
+    background-color: black;}
+
+.res {
+    padding: 10px;
+    border: solid 2px darkgrey;
+    color: yellow;
+    overflow: auto;
+}
