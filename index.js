@@ -149,15 +149,11 @@ class HttpRequest {
         req.onabort = () => { resError("Request aborted"); };
         req.send(body);
         function req_readyStateChange() {
-            if (req.readyState !== XMLHttpRequest.DONE || req.status === 0)
-                return;
-            if (isCompleted)
+            if (req.readyState !== XMLHttpRequest.DONE || req.status === 0 || isCompleted)
                 return;
             isCompleted = true;
-            const isResponseText = req.responseType === "text" || req.responseType === "";
             callback({
-                response: isResponseText ? undefined : req.response,
-                responseText: isResponseText ? req.responseText : undefined,
+                response: req.response,
                 responseType: req.responseType,
                 responseURL: req.responseURL,
                 status: req.status,
@@ -170,8 +166,7 @@ class HttpRequest {
                 return;
             isCompleted = true;
             callback({
-                response: undefined,
-                responseText: undefined,
+                response: null,
                 responseType: req.responseType,
                 responseURL: url,
                 status: req.status,
@@ -202,13 +197,13 @@ class HttpRequest {
         const resHeaders = req.getAllResponseHeaders().trim().split(/[\r\n]+/);
         for (let i = 0; i < resHeaders.length; i += 1) {
             const header = resHeaders[i];
-            const parts = header.split(": ");
+            const parts = header.split(":");
             if (parts.length !== 2)
                 continue;
             const name = parts[0].trim();
             const value = parts[1].trim();
             if (name.length > 0 && value.length > 0)
-                headers[name] = value;
+                headers[name] = headers[name] ? headers[name] + "; " + value : value;
         }
         return headers;
     }

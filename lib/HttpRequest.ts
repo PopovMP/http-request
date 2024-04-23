@@ -6,7 +6,7 @@
  *
  * Copyright @ 2024 Miroslav Popov
  *
- * v2.0 2024.04.22
+ * v2.1 2024.04.23
  */
 
 interface HttpRequestOptions {
@@ -16,8 +16,7 @@ interface HttpRequestOptions {
 }
 
 interface HttpRequestResponse {
-    response    : ArrayBuffer | Blob | Document | Object | string | undefined
-    responseText: string | undefined
+    response    : ArrayBuffer | Blob | Document | Object | string | undefined | null
     responseType: "" | "arraybuffer" | "blob" | "document" | "json" | "text"
     responseURL : string
     status      : number
@@ -96,14 +95,11 @@ class HttpRequest {
         req.send(body);
 
         function req_readyStateChange(): void {
-            if (req.readyState !== XMLHttpRequest.DONE || req.status === 0) return;
-            if (isCompleted) return;
+            if (req.readyState !== XMLHttpRequest.DONE || req.status === 0 || isCompleted) return;
             isCompleted = true;
 
-            const isResponseText: boolean = req.responseType === "text" || req.responseType === "";
             callback({
-                 response    : isResponseText ? undefined : req.response,
-                 responseText: isResponseText ? req.responseText : undefined,
+                 response    : req.response,
                  responseType: req.responseType,
                  responseURL : req.responseURL,
                  status      : req.status,
@@ -117,8 +113,7 @@ class HttpRequest {
             isCompleted = true;
 
             callback({
-                 response    : undefined,
-                 responseText: undefined,
+                 response    : null,
                  responseType: req.responseType,
                  responseURL : url,
                  status      : req.status,
@@ -153,12 +148,12 @@ class HttpRequest {
 
         for (let i: number = 0; i < resHeaders.length; i += 1) {
             const header: string   = resHeaders[i];
-            const parts : string[] = header.split(": ");
+            const parts : string[] = header.split(":");
             if (parts.length !== 2) continue;
             const name : string = parts[0].trim();
             const value: string = parts[1].trim();
             if (name.length > 0 && value.length > 0)
-                headers[name] = value;
+                headers[name] = headers[name] ? headers[name] + "; " + value : value;
         }
 
         return headers;
