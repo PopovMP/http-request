@@ -4,28 +4,29 @@
  * A simple XMLHttpRequest helper
  * https://github.com/PopovMP/http-request
  *
- * Copyright @ 2024 Miroslav Popov
+ * Copyright @ 2025 Miroslav Popov
  *
- * v2.1 2024.04.23
+ * v2.2 2025.09.04
  */
 
 interface HttpRequestOptions {
-    headers     ?: Record<string, string>
-    responseType?: "" | "arraybuffer" | "blob" | "document" | "json" | "text"
-    timeout     ?: number // a number of milliseconds
+    headers     ?: Record<string, string>;
+    responseType?: "" | "arraybuffer" | "blob" | "document" | "json" | "text";
+    timeout     ?: number; // a number of milliseconds
 }
 
 interface HttpRequestResponse {
-    response    : ArrayBuffer | Blob | Document | Object | string | undefined | null
-    responseType: "" | "arraybuffer" | "blob" | "document" | "json" | "text"
-    responseURL : string
-    status      : number
-    statusText  : string
-    headers     : Record<string, string>
+    response    : ArrayBuffer | Blob | Document | Object | string | undefined | null;
+    responseType: "" | "arraybuffer" | "blob" | "document" | "json" | "text";
+    responseURL : string;
+    status      : number;
+    statusText  : string;
+    headers     : Record<string, string>;
 }
 
-type HttpRequestMethod   = "GET" | "POST" | "HEAD" | "PUT" | "DELETE" | "PATCH" | "OPTIONS"
-type HttpRequestCallback = (res: HttpRequestResponse) => void
+type HttpRequestMethod   = "GET" | "POST" | "HEAD" | "PUT" | "DELETE" | "PATCH" | "OPTIONS";
+type HttpRequestCallback = (res: HttpRequestResponse) => void;
+
 
 /**
  * Provides `get` and `post` methods
@@ -42,7 +43,7 @@ class HttpRequest {
     /**
      * POST ArrayBuffer, string or null
      */
-    public static post(url: string, body: ArrayBuffer | string | null, options: HttpRequestOptions,
+    public static post(url: string, body: Document | XMLHttpRequestBodyInit | null | undefined, options: HttpRequestOptions,
                        callback: HttpRequestCallback): void {
         HttpRequest.request("POST", url, body, options, callback);
     }
@@ -51,10 +52,12 @@ class HttpRequest {
      * POST JSON
      */
     public static json(url: string, data: object, options: HttpRequestOptions, callback: HttpRequestCallback): void {
-        const bodyText: string = JSON.stringify(data);
+        if (!options.headers) {
+            options.headers = {};
+        }
+        options.headers["Content-Type"] = "application/json;charset=UTF-8";
 
-        if (!options.headers) options.headers = {};
-        options.headers["Content-Type"] = "application/json";
+        const bodyText: string = JSON.stringify(data);
 
         HttpRequest.request("POST", url, bodyText, options, callback);
     }
@@ -64,14 +67,18 @@ class HttpRequest {
      */
     public static form(url: string, formData: Record<string, string|number>, options: HttpRequestOptions,
                        callback: HttpRequestCallback): void {
+        if (!options.headers) {
+            options.headers = {};
+        }
+        options.headers["Content-Type"] = "application/x-www-form-urlencoded;charset=UTF-8";
 
         const parameters: string[] = [];
-        for (const param of Object.keys(formData))
-            parameters.push(`${param}=${encodeURIComponent(formData[param])}`);
+        for (const param of Object.keys(formData)) {
+            const paramEncoded = encodeURIComponent(param);
+            const valueEncoded = encodeURIComponent(formData[param]);
+            parameters.push(`${paramEncoded}=${valueEncoded}`);
+        }
         const bodyText: string = parameters.join("&");
-
-        if (!options.headers) options.headers = {};
-        options.headers["Content-Type"] = "application/x-www-form-urlencoded";
 
         HttpRequest.request("POST", url, bodyText, options, callback);
     }
@@ -79,7 +86,7 @@ class HttpRequest {
     /**
      * Make a request
      */
-    public static request(method: HttpRequestMethod, url: string, body: ArrayBuffer | string | null,
+    public static request(method: HttpRequestMethod, url: string, body: Document | XMLHttpRequestBodyInit | null | undefined,
                           options: HttpRequestOptions, callback: HttpRequestCallback): void {
         let isCompleted: boolean = false; // Ensures that the callback is called only once.
 
@@ -89,9 +96,9 @@ class HttpRequest {
         req.timeout            = typeof options.timeout === "number" ? options.timeout : 20 * 1000;
         req.responseType       = options.responseType || "";
         req.onreadystatechange = req_readyStateChange;
-        req.onerror            = (): void => { resError("Request error"  ) };
-        req.ontimeout          = (): void => { resError("Request timeout") };
-        req.onabort            = (): void => { resError("Request aborted") };
+        req.onerror            = (): void => { resError("Request error"  ); };
+        req.ontimeout          = (): void => { resError("Request timeout"); };
+        req.onabort            = (): void => { resError("Request aborted"); };
         req.send(body);
 
         function req_readyStateChange(): void {
@@ -99,12 +106,12 @@ class HttpRequest {
             isCompleted = true;
 
             callback({
-                 response    : req.response,
-                 responseType: req.responseType,
-                 responseURL : req.responseURL,
-                 status      : req.status,
-                 statusText  : req.statusText,
-                 headers     : HttpRequest.getResHeaders(req),
+                response    : req.response,
+                responseType: req.responseType,
+                responseURL : req.responseURL,
+                status      : req.status,
+                statusText  : req.statusText,
+                headers     : HttpRequest.getResHeaders(req),
             });
         }
 
@@ -113,12 +120,12 @@ class HttpRequest {
             isCompleted = true;
 
             callback({
-                 response    : null,
-                 responseType: req.responseType,
-                 responseURL : url,
-                 status      : req.status,
-                 statusText  : message,
-                 headers     : {},
+                response    : null,
+                responseType: req.responseType,
+                responseURL : url,
+                status      : req.status,
+                statusText  : message,
+                headers     : {},
             });
         }
     }
@@ -131,7 +138,7 @@ class HttpRequest {
         }
 
         const names: string[] = Object.keys(options.headers);
-        for (let i: number = 0; i < names.length; i += 1) {
+        for (let i: number = 0; i < names.length; i++) {
             const value: string | any = options.headers[names[i]];
             if (typeof value !== "string") {
                 console.error(`Wrong header: ${names[i]} ${value}`);
@@ -146,16 +153,23 @@ class HttpRequest {
         const headers   : Record<string, string> = {};
         const resHeaders: string[] = req.getAllResponseHeaders().trim().split(/[\r\n]+/);
 
-        for (let i: number = 0; i < resHeaders.length; i += 1) {
-            const header: string   = resHeaders[i];
-            const parts : string[] = header.split(":");
-            if (parts.length !== 2) continue;
-            const name : string = parts[0].trim();
-            const value: string = parts[1].trim();
-            if (name.length > 0 && value.length > 0)
-                headers[name] = headers[name] ? headers[name] + "; " + value : value;
+        for (let i: number = 0; i < resHeaders.length; i++) {
+            const header    : string = resHeaders[i];
+            const colonIndex: number = header.indexOf(":");
+            if (colonIndex >= 0) {
+                const name : string = header.slice(0, colonIndex ).trim();
+                const value: string = header.slice(colonIndex + 1).trim();
+                if (name.length > 0 && value.length > 0) {
+                    if (headers[name]) {
+                        headers[name] += "; " + value;
+                    } else {
+                        headers[name] = value;
+                    }
+                }
+            }
         }
 
         return headers;
     }
 }
+

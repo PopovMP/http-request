@@ -49,7 +49,7 @@ class Application {
         const resField = document.getElementById("post-json-res");
         const url = "https://httpbin.org/anything";
         const options = { responseType: "json" };
-        const body = { foo: "bar", baz: 42 };
+        const body = { foo: "bar", baz: 42, "поле на форма": "Здравей, Свят!" };
         HttpRequest.json(url, body, options, (res) => {
             resField.innerText = JSON.stringify(res, null, 2);
         });
@@ -59,7 +59,7 @@ class Application {
         const resField = document.getElementById("post-form-res");
         const url = "https://httpbin.org/post";
         const options = { responseType: "json" };
-        const form = { foo: "bar", baz: 42 };
+        const form = { foo: "bar", baz: 42, "поле на форма": "Здравей, Свят!" };
         HttpRequest.form(url, form, options, (res) => {
             resField.innerText = JSON.stringify(res, null, 2);
         });
@@ -89,9 +89,9 @@ class Application {
  * A simple XMLHttpRequest helper
  * https://github.com/PopovMP/http-request
  *
- * Copyright @ 2024 Miroslav Popov
+ * Copyright @ 2025 Miroslav Popov
  *
- * v2.0 2024.04.22
+ * v2.2 2025.09.04
  */
 /**
  * Provides `get` and `post` methods
@@ -114,23 +114,28 @@ class HttpRequest {
      * POST JSON
      */
     static json(url, data, options, callback) {
-        const bodyText = JSON.stringify(data);
-        if (!options.headers)
+        if (!options.headers) {
             options.headers = {};
-        options.headers["Content-Type"] = "application/json";
+        }
+        options.headers["Content-Type"] = "application/json;charset=UTF-8";
+        const bodyText = JSON.stringify(data);
         HttpRequest.request("POST", url, bodyText, options, callback);
     }
     /**
      * Make POST request encoded as "application/x-www-form-urlencoded"
      */
     static form(url, formData, options, callback) {
-        const parameters = [];
-        for (const param of Object.keys(formData))
-            parameters.push(`${param}=${encodeURIComponent(formData[param])}`);
-        const bodyText = parameters.join("&");
-        if (!options.headers)
+        if (!options.headers) {
             options.headers = {};
-        options.headers["Content-Type"] = "application/x-www-form-urlencoded";
+        }
+        options.headers["Content-Type"] = "application/x-www-form-urlencoded;charset=UTF-8";
+        const parameters = [];
+        for (const param of Object.keys(formData)) {
+            const paramEncoded = encodeURIComponent(param);
+            const valueEncoded = encodeURIComponent(formData[param]);
+            parameters.push(`${paramEncoded}=${valueEncoded}`);
+        }
+        const bodyText = parameters.join("&");
         HttpRequest.request("POST", url, bodyText, options, callback);
     }
     /**
@@ -183,7 +188,7 @@ class HttpRequest {
             return;
         }
         const names = Object.keys(options.headers);
-        for (let i = 0; i < names.length; i += 1) {
+        for (let i = 0; i < names.length; i++) {
             const value = options.headers[names[i]];
             if (typeof value !== "string") {
                 console.error(`Wrong header: ${names[i]} ${value}`);
@@ -195,15 +200,21 @@ class HttpRequest {
     static getResHeaders(req) {
         const headers = {};
         const resHeaders = req.getAllResponseHeaders().trim().split(/[\r\n]+/);
-        for (let i = 0; i < resHeaders.length; i += 1) {
+        for (let i = 0; i < resHeaders.length; i++) {
             const header = resHeaders[i];
-            const parts = header.split(":");
-            if (parts.length !== 2)
-                continue;
-            const name = parts[0].trim();
-            const value = parts[1].trim();
-            if (name.length > 0 && value.length > 0)
-                headers[name] = headers[name] ? headers[name] + "; " + value : value;
+            const colonIndex = header.indexOf(":");
+            if (colonIndex >= 0) {
+                const name = header.slice(0, colonIndex).trim();
+                const value = header.slice(colonIndex + 1).trim();
+                if (name.length > 0 && value.length > 0) {
+                    if (headers[name]) {
+                        headers[name] += "; " + value;
+                    }
+                    else {
+                        headers[name] = value;
+                    }
+                }
+            }
         }
         return headers;
     }

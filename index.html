@@ -54,8 +54,8 @@ HttpRequest.post(url, bodyTxt, options, (res: HttpRequestResponse): void => {
 <h2>POST JSON</h2>
 <pre class="code">
 const url    : string             = "https://httpbin.org/anything";
-const options: HttpRequestOptions = {responseType: "json"};
-const body   : any                = {foo: "bar", baz: 42};
+const options: HttpRequestOptions = { responseType: "json" };
+const body   : any                = { foo: "bar", baz: 42, "поле на форма": "Здравей, Свят!" };
 
 HttpRequest.json(url, body, options, (res: HttpRequestResponse): void => {
     resField.innerText = JSON.stringify(res, null, 2);
@@ -68,8 +68,8 @@ HttpRequest.json(url, body, options, (res: HttpRequestResponse): void => {
 <h2>POST Form</h2>
 <pre class="code">
 const url    : string                               = "https://httpbin.org/post";
-const options: HttpRequestOptions                   = {responseType: "json"};
-const form   : { [param: string]: string | number } = {foo: "bar", baz: 42};
+const options: HttpRequestOptions                   = { responseType: "json" };
+const form   : { [param: string]: string | number } = { foo: "bar", baz: 42, "поле на форма": "Здравей, Свят!" };
 
 HttpRequest.form(url, form, options, (res: HttpRequestResponse): void => {
     resField.innerText = JSON.stringify(res, null, 2);
